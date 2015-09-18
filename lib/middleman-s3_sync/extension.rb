@@ -30,23 +30,23 @@ module Middleman
 
     def initialize(app, options_hash = {}, &block)
       super
-      app.define_hook :after_s3_sync
-      app.extend ClassMethods
+
+      read_config
     end
 
     def after_configuration
-      read_config
-      options.http_prefix = app.http_prefix if app.respond_to? :http_prefix
-      options.build_dir ||= app.build_dir if app.respond_to? :build_dir
+      options.http_prefix = app.config.http_prefix if app.config.respond_to? :http_prefix
+      options.build_dir ||= app.config.build_dir if app.config.respond_to? :build_dir
+
       ::Middleman::S3Sync.s3_sync_options = s3_sync_options
     end
 
-    def after_build
+    def after_build builder
       ::Middleman::S3Sync.sync() if options.after_build
     end
 
     def manipulate_resource_list(resources)
-      Parallel.each(resources, in_threads: 8, progress: "Evaluating Resources") do |resource|
+      resources.each do |resource|
         ::Middleman::S3Sync.add_local_resource(resource)
       end
     end
@@ -73,27 +73,9 @@ module Middleman
 
       config = YAML.load(io).symbolize_keys
 
-      OPTIONS.each do |config_option|
-        self.send("#{config_option}=".to_sym, config[config_option]) if config[config_option]
-      end
-    end
-
-
-    module ClassMethods
-      def s3_sync_options
-        ::Middleman::S3SyncExtension.s3_sync_options
-      end
-
-      def default_caching_policy(policy = {})
-        ::Middleman::S3Sync.add_caching_policy(:default, policy)
-      end
-
-      def caching_policy(content_type, policy = {})
-        ::Middleman::S3Sync.add_caching_policy(content_type, policy)
+      options.all_settings.map(&:key).each do |config_option|
+        options[config_option] = config[config_option] if config[config_option]
       end
     end
   end
-
-  ::Middleman::Extensions.register(:s3_sync, S3SyncExtension)
 end
-

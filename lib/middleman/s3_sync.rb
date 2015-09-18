@@ -1,7 +1,6 @@
-require 'fog/aws/storage'
+require 'fog/aws'
 require 'digest/md5'
 require 'middleman/s3_sync/version'
-require 'middleman/s3_sync/options'
 require 'middleman/s3_sync/caching_policy'
 require 'middleman/s3_sync/status'
 require 'middleman/s3_sync/resource'
@@ -35,7 +34,8 @@ module Middleman
         update_resources
         delete_resources
 
-        @app.run_hook :after_s3_sync, ignored: files_to_ignore.map(&:path),
+        @app.execute_callbacks :after_s3_sync,
+                                      ignored: files_to_ignore.map(&:path),
                                       created: files_to_create.map(&:path),
                                       updated: files_to_update.map(&:path),
                                       deleted: files_to_delete.map(&:path)
@@ -162,4 +162,3 @@ module Middleman
     end
   end
 end
-
