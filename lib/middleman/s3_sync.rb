@@ -51,9 +51,9 @@ module Middleman
         end
       end
 
-      def add_local_resource(mm_resource)
-        resources[mm_resource.destination_path] = S3Sync::Resource.new(mm_resource, remote_resource_for_path(mm_resource.destination_path)).tap(&:status)
-      end
+      # def add_local_resource(mm_resource)
+      #   resources[mm_resource.destination_path] = S3Sync::Resource.new(mm_resource, remote_resource_for_path(mm_resource.destination_path)).tap(&:status)
+      # end
 
       def remote_only_paths
         paths - resources.keys
@@ -78,7 +78,12 @@ module Middleman
       end
 
       def resources
-        @resource ||= {}
+        @resource ||= begin
+          # load resources from sitemap
+          @app.sitemap.resources.each_with_object({}) do |resource, resources|
+            resources[resource.destination_path] = S3Sync::Resource.new(resource, remote_resource_for_path(resource.destination_path)).tap(&:status)
+          end
+        end
       end
 
       def paths
