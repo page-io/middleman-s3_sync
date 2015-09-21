@@ -58,7 +58,7 @@ module Middleman
 
       def update!
         local_content { |body|
-          say_status ANSI.blue{"Updating"} + " #{remote_path}#{ gzipped ? ANSI.white {' (gzipped)'} : ''}"
+          say_status ANSI.blue{'Updating'} + " #{remote_path}#{ gzipped ? ANSI.white {' (gzipped)'} : ''}"
           s3_resource.merge_attributes(to_h)
           s3_resource.body = body
 
@@ -210,7 +210,7 @@ module Middleman
       end
 
       def caching_policy
-        @caching_policy ||= Middleman::S3Sync.caching_policy_for(content_type)
+        @caching_policy ||= Middleman::S3Sync.instance.caching_policy_for(content_type)
       end
 
       protected
@@ -223,7 +223,7 @@ module Middleman
       end
 
       def options
-        @options || Middleman::S3Sync.s3_sync_options
+        @options || Middleman::S3Sync.instance.options
       end
     end
   end

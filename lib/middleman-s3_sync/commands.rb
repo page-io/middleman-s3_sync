@@ -39,24 +39,15 @@ module Middleman
         verbose = options['verbose'] ? 0 : 1
         instrument = options['instrument']
 
-        @app = ::Middleman::Application.new do
+        app = ::Middleman::Application.new do
           config[:mode] = :build
           config[:environment] = env
           config[:show_exceptions] = false
           ::Middleman::Logger.singleton(verbose, instrument)
         end
 
-        ::Middleman::S3Sync.app = @app
 
-        s3_sync_options = ::Middleman::S3Sync.s3_sync_options
-
-        bucket = s3_sync_options.bucket rescue nil
-
-        unless bucket
-          raise Thor::Error.new "You need to activate the s3_sync extension and at least provide the bucket name."
-        end
-
-        #s3_sync_options = shared_inst.s3_sync_options
+        s3_sync_options = ::Middleman::S3Sync.instance.options
 
         # Override options based on what was passed on the command line...
         s3_sync_options.force = options[:force] if options[:force]
@@ -64,11 +55,18 @@ module Middleman
         s3_sync_options.verbose = options[:verbose] if options[:verbose]
         s3_sync_options.dry_run = options[:dry_run] if options[:dry_run]
 
-        ::Middleman::S3Sync.sync()
+        bucket = s3_sync_options.bucket rescue nil
+
+        unless bucket
+          raise Thor::Error.new 'You need to activate the s3_sync extension and at least provide the bucket name.'
+        end
+
+        synchronizer = ::Middleman::S3Sync::Synchronizer.new(app, s3_sync_options)
+        synchronizer.sync
       end
     end
 
-    Base.register(Middleman::Cli::S3Sync, 's3_sync', 's3_sync [options]', "Deploys a middleman site to a S3 bucket")
+    Base.register(Middleman::Cli::S3Sync, 's3_sync', 's3_sync [options]', 'Deploys a middleman site to a S3 bucket')
 
     Base.map("sync" => "s3_sync")
   end
